@@ -17,7 +17,6 @@ connectionSelfHost = ('127.0.0.1', server_port)
 
 server_sock = None
 client_sock = None
-
 reciever = ""
 message_to_send = ""
 
@@ -33,7 +32,7 @@ def initUser():
     message = pickle.dumps(data);
     server_sock.sendto(message, connectionHostToServer)
 
-def server():
+def self_server():
     global client_sock
     global connectionSelfHost
     global peerListenerThread
@@ -73,7 +72,6 @@ def client(stop):
             print("\nERROR: Invalid Format!\n")
         except:
             print("\n*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*\n")
-            # print("\nERROR: Unhandled Excpetion!\n")
 
         if stop():
             break
@@ -85,7 +83,7 @@ def serverListener(stop):
 
     while True:
         data, address = server_sock.recvfrom(MAX_BYTES)
-        logMessage(data, sys._getframe().f_code.co_name)
+        processMessage(data)
 
         if stop():
             break
@@ -96,13 +94,13 @@ def peerListener(stop):
 
     while True:
         data, address = client_sock.recvfrom(MAX_BYTES)
-        logMessage(data, sys._getframe().f_code.co_name)
+        processMessage(data)
 
         if stop():
             break
 
 
-def logMessage(data, func_name):
+def processMessage(data):
 
     global server_sock
     global client_sock
@@ -110,30 +108,48 @@ def logMessage(data, func_name):
     global connectionSelfHost
 
     obj = pickle.loads(data)
-    # print("Message From --> " + str(func_name))
+
     try:    
         if obj["messageType"] == "Auth":
-                lst = list(connectionSelfHost)
-                lst[1] = int(obj["message"])
-                connectionSelfHost = tuple(lst)
-                server()
-                # print("+++++ Auth Success!")
+            processMessageAuth(obj)
                 
         if obj["messageType"] == "RecieverPort":
-            new_obj = {"username": selfUsername, "message": message_to_send, "messageType": "Message"}
-            message = pickle.dumps(new_obj)
-            lst = list(connectionHostToPeer)
-            lst[1] = int(obj["message"])
-            connectionHostToPeer = tuple(lst)
-            # print("Sending message to" + str(connectionHostToPeer))
-            client_sock.sendto(message, connectionHostToPeer)
-            # print("+++++ RecieverPort Successs!")
+            processMessageRecieverPort(obj)
 
         if obj["messageType"] == "Message":
-            print(">>> " + obj["username"] + ": " + obj["message"])
+            displayMessage(obj)
     except:
-        print("--------> Exception")
-    # print(">>> " + str(obj))
+        displayExcpetionMessage(obj)
+
+
+def processMessageAuth(obj):
+    global connectionSelfHost
+
+    lst = list(connectionSelfHost)
+    lst[1] = int(obj["message"])
+    connectionSelfHost = tuple(lst)
+    self_server()
+
+def processMessageRecieverPort(obj):
+    global connectionHostToPeer
+
+    new_obj = {"username": selfUsername, "message": message_to_send, "messageType": "Message"}
+    message = pickle.dumps(new_obj)
+    lst = list(connectionHostToPeer)
+    lst[1] = int(obj["message"])
+    connectionHostToPeer = tuple(lst)
+    client_sock.sendto(message, connectionHostToPeer)
+
+def displayMessage(obj):
+    print(">>> " + obj["username"] + ": " + obj["message"])
+
+def displayExcpetionMessage(obj):
+    print("--------> Exception")
+    print("--------> OnException Message -----> " + str(obj))
+
+def logMessage(obj, func_name):
+    print("[LOG] Message From --> " + str(func_name))
+    print("[LOG] [TIME] >>> " + obj)
 
 def checkIfCommand(message):
     if message[0] == ":":
