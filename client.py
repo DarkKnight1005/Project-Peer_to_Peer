@@ -23,7 +23,7 @@ async def initUser():
     data = {"username": selfUsername}
     async with aiohttp.ClientSession(headers={"Content-Type":"application/json"}) as session:
 
-        authUrl = "http://127.0.0.1:9908/net_api/auth"
+        authUrl = globalConsts.apiPath + "/auth"
         async with session.post(authUrl, json=data) as resp:
             selfPort = await resp.json()
             selfPort = selfPort["port"]
@@ -65,7 +65,7 @@ async def client(stop):
             message_to_send = lst[1].strip()
             data = {"username": reciever}
             async with aiohttp.ClientSession(headers={"Content-Type":"application/json"}) as session:
-                portRequest = "http://127.0.0.1:9908/net_api/recieverPort"
+                portRequest = globalConsts.apiPath + "/recieverPort"
                 async with session.post(portRequest, json=data) as resp:
                     recieverPort = await resp.json()
                     recieverPort = recieverPort["port"]
